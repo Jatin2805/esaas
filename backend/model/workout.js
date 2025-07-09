@@ -1,4 +1,3 @@
-const Workout = require('../model/workout');
 const mongoose = require("mongoose");
 
 const Schema = mongoose.Schema;

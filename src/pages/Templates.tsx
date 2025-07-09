@@ -156,7 +156,7 @@ const Templates = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         ) : (
-        {sortedTemplates.map((template, index) => (
+          sortedTemplates.map((template, index) => (
           <motion.div
             key={template.id}
             initial={{ opacity: 0, y: 20 }}
@@ -240,8 +240,10 @@ const Templates = () => {
 
               {/* Actions */}
               <div className="flex space-x-2">
-                <button className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                <button 
                   onClick={() => handleUseTemplate(template)}
+                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                >
                   Use Template
                 </button>
                 <button className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
@@ -250,7 +252,7 @@ const Templates = () => {
               </div>
             </div>
           </motion.div>
-        ))}
+          ))
         )}
       </div>
 

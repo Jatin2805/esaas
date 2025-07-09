@@ -64,6 +64,8 @@ const deleteworkout = async (req, res) => {
     if (!workout) {
       return res.status(404).json({ error: 'No such workout' });
     }
+    
+    res.status(200).json({ message: 'Workout deleted successfully' });
 }
 const updateworkout = async (req,res)=>{
     const {id } = req.params
@@ -73,10 +75,12 @@ const updateworkout = async (req,res)=>{
     const workout = await Workout.findOneAndUpdate({ _id:id},{
 
         ...req.body 
-    })
+    }, { new: true })
     if (!workout) {
       return res.status(404).json({ error: 'No such workout' });
     }
+    
+    res.status(200).json(workout);
 }
 
 

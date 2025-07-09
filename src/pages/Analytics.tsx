@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useWorkouts } from '../hooks/useWorkouts';
 import {
   TrendingUp,
   TrendingDown,
@@ -17,13 +18,21 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Cell, AreaChart, Area } from 'recharts';
 
 const Analytics = () => {
+  const { workouts, loading } = useWorkouts();
   const [dateRange, setDateRange] = useState('7d');
   const [selectedFunnel, setSelectedFunnel] = useState('all');
+
+  const funnels = workouts.filter(w => w.category === 'funnel');
+  const totalVisitors = workouts.reduce((sum, w) => sum + w.reps, 0);
+  const totalRevenue = workouts.reduce((sum, w) => sum + (w.load * 100), 0);
+  const avgConversion = funnels.length > 0 
+    ? (funnels.reduce((sum, f) => sum + (f.reps / (f.load + 1)), 0) / funnels.length * 100).toFixed(1)
+    : '0.0';
 
   const stats = [
     {
       title: 'Total Visitors',
-      value: '45,231',
+      value: totalVisitors.toLocaleString(),
       change: '+12.5%',
       trend: 'up',
       icon: Users,
@@ -31,7 +40,7 @@ const Analytics = () => {
     },
     {
       title: 'Conversion Rate',
-      value: '8.4%',
+      value: `${avgConversion}%`,
       change: '+2.1%',
       trend: 'up',
       icon: TrendingUp,
@@ -39,7 +48,7 @@ const Analytics = () => {
     },
     {
       title: 'Revenue',
-      value: '$124,563',
+      value: `$${totalRevenue.toLocaleString()}`,
       change: '+18.2%',
       trend: 'up',
       icon: DollarSign,
@@ -79,12 +88,12 @@ const Analytics = () => {
     { name: 'Tablet', value: 20, color: '#10b981' }
   ];
 
-  const topPages = [
-    { page: 'Fitness Course Landing', views: 12547, conversions: 1247, rate: '9.9%' },
-    { page: 'SaaS Demo Page', views: 8932, conversions: 892, rate: '10.0%' },
-    { page: 'E-book Download', views: 6543, conversions: 654, rate: '10.0%' },
-    { page: 'Webinar Registration', views: 5432, conversions: 543, rate: '10.0%' }
-  ];
+  const topPages = funnels.slice(0, 4).map(funnel => ({
+    page: funnel.title,
+    views: funnel.reps * 10,
+    conversions: funnel.reps,
+    rate: `${((funnel.reps / (funnel.load + 1)) * 100).toFixed(1)}%`
+  }));
 
   const trafficSources = [
     { source: 'Google Ads', visitors: 15420, percentage: 34.1 },
@@ -110,9 +119,11 @@ const Analytics = () => {
             className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Funnels</option>
-            <option value="fitness">Fitness Course</option>
-            <option value="saas">SaaS Demo</option>
-            <option value="ebook">E-book Download</option>
+            {funnels.map(funnel => (
+              <option key={funnel._id} value={funnel._id}>
+                {funnel.title}
+              </option>
+            ))}
           </select>
           
           <select
@@ -329,7 +340,12 @@ const Analytics = () => {
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Top Performing Pages</h3>
           
           <div className="space-y-4">
-            {topPages.map((page, index) => (
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : topPages.length > 0 ? (
+              topPages.map((page, index) => (
               <div key={page.page} className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg transition-colors">
                 <div className="flex items-center space-x-3">
                   <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -346,7 +362,12 @@ const Analytics = () => {
                   <p className="text-sm text-green-600">{page.rate}</p>
                 </div>
               </div>
-            ))}
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p>No funnel data available</p>
+              </div>
+            )}
           </div>
         </motion.div>
 
