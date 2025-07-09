@@ -156,7 +156,8 @@ const Templates = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         ) : (
-          sortedTemplates.map((template, index) => (
+        <>
+          {sortedTemplates.map((template, index) => (
           <motion.div
             key={template.id}
             initial={{ opacity: 0, y: 20 }}
@@ -252,7 +253,8 @@ const Templates = () => {
               </div>
             </div>
           </motion.div>
-          ))
+          ))}
+        </>
         )}
       </div>
 
