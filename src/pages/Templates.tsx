@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useWorkouts, useWorkoutsByCategory } from '../hooks/useWorkouts';
+import toast from 'react-hot-toast';
 import {
   Search,
   Filter,
@@ -16,9 +18,12 @@ import {
 } from 'lucide-react';
 
 const Templates = () => {
+  const { createWorkout } = useWorkouts();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('popular');
+  
+  const { workouts: templateWorkouts, loading } = useWorkoutsByCategory('template');
 
   const categories = [
     { id: 'all', label: 'All Templates', icon: Zap },
@@ -29,80 +34,32 @@ const Templates = () => {
     { id: 'personal', label: 'Personal', icon: Users }
   ];
 
-  const templates = [
-    {
-      id: 1,
-      name: 'Fitness Course Landing',
-      category: 'education',
-      description: 'High-converting landing page for fitness courses with video testimonials',
-      image: 'https://images.pexels.com/photos/416778/pexels-photo-416778.jpeg?auto=compress&cs=tinysrgb&w=400',
-      rating: 4.8,
-      downloads: 1247,
-      price: 'Free',
-      tags: ['Landing Page', 'Video', 'Testimonials'],
-      conversionRate: '12.4%'
-    },
-    {
-      id: 2,
-      name: 'SaaS Product Demo',
-      category: 'business',
-      description: 'Complete funnel for SaaS product demonstrations with trial signup',
-      image: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=400',
-      rating: 4.9,
-      downloads: 892,
-      price: '$29',
-      tags: ['SaaS', 'Demo', 'Trial'],
-      conversionRate: '8.9%'
-    },
-    {
-      id: 3,
-      name: 'E-book Download',
-      category: 'marketing',
-      description: 'Lead magnet funnel for e-book downloads with email capture',
-      image: 'https://images.pexels.com/photos/159711/books-bookstore-book-reading-159711.jpeg?auto=compress&cs=tinysrgb&w=400',
-      rating: 4.7,
-      downloads: 654,
-      price: 'Free',
-      tags: ['Lead Magnet', 'E-book', 'Email'],
-      conversionRate: '15.2%'
-    },
-    {
-      id: 4,
-      name: 'Webinar Registration',
-      category: 'education',
-      description: 'Multi-step webinar registration with automated email sequences',
-      image: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400',
-      rating: 4.6,
-      downloads: 543,
-      price: '$19',
-      tags: ['Webinar', 'Registration', 'Email'],
-      conversionRate: '7.8%'
-    },
-    {
-      id: 5,
-      name: 'Product Launch',
-      category: 'ecommerce',
-      description: 'Complete product launch funnel with countdown timer and social proof',
-      image: 'https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=400',
-      rating: 4.9,
-      downloads: 789,
-      price: '$39',
-      tags: ['Product Launch', 'Countdown', 'Social Proof'],
-      conversionRate: '11.3%'
-    },
-    {
-      id: 6,
-      name: 'Coaching Services',
-      category: 'personal',
-      description: 'Personal coaching services funnel with booking calendar integration',
-      image: 'https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=400',
-      rating: 4.8,
-      downloads: 432,
-      price: '$24',
-      tags: ['Coaching', 'Booking', 'Services'],
-      conversionRate: '9.7%'
+  // Convert backend workouts to template format
+  const templates = templateWorkouts.map(workout => ({
+    id: workout._id,
+    name: workout.title,
+    category: 'business', // Default category
+    description: `Template with ${workout.reps} elements and ${workout.load} configurations`,
+    image: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=400',
+    rating: 4.5 + (workout.reps % 5) * 0.1,
+    downloads: workout.reps * 10,
+    price: workout.load > 0 ? `$${workout.load}` : 'Free',
+    tags: ['Template', 'Funnel', 'Conversion'],
+    conversionRate: `${(8 + (workout.reps % 10))}%`
+  }));
+
+  const handleUseTemplate = async (template: any) => {
+    const success = await createWorkout({
+      title: `${template.name} - Copy`,
+      reps: template.downloads / 10,
+      load: template.price === 'Free' ? 0 : parseInt(template.price.replace('$', '')),
+      category: 'funnel'
+    });
+
+    if (success) {
+      toast.success('Template applied to new funnel!');
     }
-  ];
+  };
 
   const filteredTemplates = templates.filter(template => {
     const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -194,6 +151,11 @@ const Templates = () => {
 
       {/* Templates Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {loading ? (
+          <div className="col-span-full flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        ) : (
         {sortedTemplates.map((template, index) => (
           <motion.div
             key={template.id}
@@ -279,6 +241,7 @@ const Templates = () => {
               {/* Actions */}
               <div className="flex space-x-2">
                 <button className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                  onClick={() => handleUseTemplate(template)}
                   Use Template
                 </button>
                 <button className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
@@ -288,14 +251,20 @@ const Templates = () => {
             </div>
           </motion.div>
         ))}
+        )}
       </div>
 
       {/* Empty State */}
-      {sortedTemplates.length === 0 && (
+      {!loading && sortedTemplates.length === 0 && (
         <div className="text-center py-12">
           <Filter className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No templates found</h3>
-          <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
+          <p className="text-gray-600">
+            {templateWorkouts.length === 0 
+              ? 'No templates available. Create some templates first.' 
+              : 'Try adjusting your search or filter criteria.'
+            }
+          </p>
         </div>
       )}
     </div>

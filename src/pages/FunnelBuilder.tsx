@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { useWorkouts } from '../hooks/useWorkouts';
+import toast from 'react-hot-toast';
 import {
   Type,
   Image,
@@ -24,6 +26,7 @@ import {
 import { useAppStore } from '../store/appStore';
 
 const FunnelBuilder = () => {
+  const { workouts, loading, createWorkout, updateWorkout, deleteWorkout } = useWorkouts();
   const { 
     currentView, 
     currentPage, 
@@ -40,7 +43,37 @@ const FunnelBuilder = () => {
   } = useAppStore();
 
   const [activeTab, setActiveTab] = useState('elements');
+  const [selectedFunnel, setSelectedFunnel] = useState<string>('');
+  const [funnelName, setFunnelName] = useState('');
 
+  const funnels = workouts.filter(w => w.category === 'funnel');
+
+  const handleCreateFunnel = async () => {
+    if (!funnelName.trim()) {
+      toast.error('Please enter a funnel name');
+      return;
+    }
+
+    const success = await createWorkout({
+      title: funnelName,
+      reps: 0,
+      load: 0,
+      category: 'funnel'
+    });
+
+    if (success) {
+      setFunnelName('');
+    }
+  };
+
+  const handleDeleteFunnel = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this funnel?')) {
+      await deleteWorkout(id);
+      if (selectedFunnel === id) {
+        setSelectedFunnel('');
+      }
+    }
+  };
   const elementTypes = [
     { type: 'text', icon: Type, label: 'Text', color: 'blue' },
     { type: 'image', icon: Image, label: 'Image', color: 'green' },
@@ -107,7 +140,61 @@ const FunnelBuilder = () => {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Left Sidebar - Elements & Properties */}
-      <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+      <div className="w-96 bg-white border-r border-gray-200 flex flex-col">
+        {/* Funnel Selector */}
+        <div className="p-4 border-b border-gray-200">
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Funnel
+              </label>
+              <select
+                value={selectedFunnel}
+                onChange={(e) => setSelectedFunnel(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Choose a funnel...</option>
+                {funnels.map((funnel) => (
+                  <option key={funnel._id} value={funnel._id}>
+                    {funnel.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                placeholder="New funnel name"
+                value={funnelName}
+                onChange={(e) => setFunnelName(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                onClick={handleCreateFunnel}
+                disabled={loading}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+
+            {selectedFunnel && (
+              <div className="flex justify-between items-center pt-2">
+                <span className="text-sm text-gray-600">
+                  Editing: {funnels.find(f => f._id === selectedFunnel)?.title}
+                </span>
+                <button
+                  onClick={() => handleDeleteFunnel(selectedFunnel)}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Tabs */}
         <div className="flex border-b border-gray-200">
           <button
@@ -147,6 +234,14 @@ const FunnelBuilder = () => {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
+          {!selectedFunnel ? (
+            <div className="text-center py-8">
+              <Zap className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Funnel</h3>
+              <p className="text-gray-600">Choose an existing funnel or create a new one to start building.</p>
+            </div>
+          ) : (
+            <>
           {activeTab === 'elements' && (
             <div className="space-y-4">
               <h3 className="font-semibold text-gray-900 mb-4">Drag Elements</h3>
@@ -299,6 +394,8 @@ const FunnelBuilder = () => {
               </div>
             </div>
           )}
+            </>
+          )}
         </div>
       </div>
 
@@ -335,6 +432,15 @@ const FunnelBuilder = () => {
 
         {/* Canvas Area */}
         <div className="flex-1 bg-gray-100 p-8 overflow-auto">
+          {!selectedFunnel ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <Zap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-medium text-gray-900 mb-2">No Funnel Selected</h3>
+                <p className="text-gray-600">Select a funnel from the sidebar to start building.</p>
+              </div>
+            </div>
+          ) : (
           <div className="mx-auto bg-white shadow-lg rounded-lg overflow-hidden" style={{ width: getViewportWidth(), minHeight: '800px' }}>
             <motion.div
               className="relative h-full"
@@ -381,6 +487,7 @@ const FunnelBuilder = () => {
               )}
             </motion.div>
           </div>
+          )}
         </div>
       </div>
     </div>

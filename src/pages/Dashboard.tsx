@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useWorkouts } from '../hooks/useWorkouts';
 import {
   TrendingUp,
   Users,
@@ -16,6 +17,21 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 const Dashboard = () => {
+  const { workouts, loading, createWorkout } = useWorkouts();
+
+  const handleCreateFunnel = async () => {
+    const success = await createWorkout({
+      title: `New Funnel ${Date.now()}`,
+      reps: 1,
+      load: 0,
+      category: 'funnel'
+    });
+    
+    if (success) {
+      // Handle success (maybe redirect to builder)
+    }
+  };
+
   const stats = [
     {
       title: 'Total Revenue',
@@ -43,7 +59,7 @@ const Dashboard = () => {
     },
     {
       title: 'Active Funnels',
-      value: '23',
+      value: workouts.filter(w => w.category === 'funnel').length.toString(),
       change: '+3',
       trend: 'up',
       icon: Zap,
@@ -61,12 +77,15 @@ const Dashboard = () => {
     { name: 'Jul', revenue: 3490, conversions: 430 }
   ];
 
-  const topFunnels = [
-    { name: 'Fitness Course Landing', conversions: 1247, revenue: '$23,450', rate: '12.4%' },
-    { name: 'SaaS Product Demo', conversions: 892, revenue: '$18,920', rate: '8.9%' },
-    { name: 'E-book Download', conversions: 654, revenue: '$12,340', rate: '15.2%' },
-    { name: 'Webinar Registration', conversions: 543, revenue: '$9,870', rate: '7.8%' }
-  ];
+  const topFunnels = workouts
+    .filter(w => w.category === 'funnel')
+    .slice(0, 4)
+    .map(workout => ({
+      name: workout.title,
+      conversions: workout.reps,
+      revenue: `$${(workout.load * 100).toFixed(0)}`,
+      rate: `${((workout.reps / (workout.load + 1)) * 100).toFixed(1)}%`
+    }));
 
   const recentActivity = [
     { action: 'New funnel created', funnel: 'Product Launch 2024', time: '2 minutes ago' },
@@ -87,10 +106,12 @@ const Dashboard = () => {
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
+          onClick={handleCreateFunnel}
+          disabled={loading}
           className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          <span>Create Funnel</span>
+          <span>{loading ? 'Loading...' : 'Create Funnel'}</span>
         </motion.button>
       </div>
 
@@ -221,7 +242,12 @@ const Dashboard = () => {
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Top Performing Funnels</h3>
           
           <div className="space-y-4">
-            {topFunnels.map((funnel, index) => (
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : topFunnels.length > 0 ? (
+              topFunnels.map((funnel, index) => (
               <div key={funnel.name} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-3">
                   <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -238,7 +264,18 @@ const Dashboard = () => {
                   <p className="text-sm text-green-600">{funnel.rate}</p>
                 </div>
               </div>
-            ))}
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p>No funnels created yet</p>
+                <button 
+                  onClick={handleCreateFunnel}
+                  className="mt-2 text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Create your first funnel
+                </button>
+              </div>
+            )}
           </div>
         </motion.div>
 
